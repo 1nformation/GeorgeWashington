@@ -1,49 +1,59 @@
+from asyncio.tasks import Task
 import discord
 from discord.ext.commands import Bot
+from discord.ext import commands, tasks  # Importing tasks here
 import os
+import get
 
-dictionary = {}
+x = []
+message = """**BEEP BOOP FREE GAME ALERT**
+
+**{}**
+{}
+
+Next free game is
+*{}*"""
 
 
-def readtomap():
-    print("loaded")
+def get_last_game():
     with open("stats.txt", "r") as f:
-        lines = f.readlines()
-        for line in lines:
-            pos = line.find('::')
-            name = line[:pos]
-            num = line[pos+2:]
-            dictionary[name] = int(num)
+        last_game = f.readline()
+    return last_game
 
 
-def addtofile(d={}):
+def set_last_game(name):
     with open("stats.txt", "w") as f:
-        for i in d:
-            f.write(i + "::" + str(d[i]) + "\n")
-
-
-def increaseuser(user):
-    if user in dictionary.keys():
-        dictionary[user] += 1
-    else:
-        dictionary[user] = 1
+        f.write(name)
 
 
 bot = Bot(command_prefix='.')
 
 
-def ordinal(n): return "%d%s" % (
-    n, "tsnrhtdd"[(n//10 % 10 != 1)*(n % 10 < 4)*n % 10::4])
+def check_if_new():
+    global x
+    x = get.get_games()
+    if x[0] != get_last_game():
+        print("NEW GAME ALERT BEEP BOOP")
+        set_last_game(x[0])
+        return True
+    else:
+        print("NO NEW GAMES :(")
+        return False
 
 
-readtomap()
-mess = "This is the {} time you've messaged the bot on the wrong fucking discord channel. You fucking donkey. The #bot channel exists for a fucking reason"
+@tasks.loop(seconds=86400)
+async def check_new_game():
+    new = check_if_new()
+    if new:
+        channel = bot.get_channel(841773185128464415)
+        await channel.send(message.format(x[0], x[1], x[2]))
 
 
 @bot.event
 async def on_ready():
     await bot.change_presence(activity=discord.Game('kys'))
     print(f'Bot connected as {bot.user}')
+    check_new_game.start()
 
 
 @bot.event
@@ -52,14 +62,7 @@ async def on_message(message: discord.Message):
         return
     print(message)
 
-    if message.content.startswith('.'):
-        await message.channel.send('Hello!')
-
-    if message.content.startswith('!play'):
-        if message.channel.name == "general":
-            increaseuser(message.author.name)
-            addtofile(dictionary)
-            await message.channel.send(mess.format(ordinal(dictionary[message.author.name])))
 
 TOKEN = os.getenv('TOKEN')
 bot.run(TOKEN)
+# print(check_if_new())
