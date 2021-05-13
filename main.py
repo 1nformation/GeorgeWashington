@@ -70,5 +70,5 @@ async def on_message(message: discord.Message):
 
 
 TOKEN = os.getenv('TOKEN')
-bot.run("NzM1MDg1NzcxODE5NzEyNTgy.XxbH-Q.oxdTbGYD0jJtDFdilg62fAU2vhM")
+bot.run(TOKEN)
 # print(check_if_new())
